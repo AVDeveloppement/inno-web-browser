@@ -1,17 +1,20 @@
-library WebBrowser;
+Library WebBrowser;
 
-uses
+Uses
   SysUtils,
   Classes,
-  MainUnit in 'MainUnit.pas';
+  MainUnit In 'MainUnit.pas';
 
 {$R *.res}
 
-exports
-  CreateWebBrowser,
-  DestroyWebBrowser,
-  ShowWebBrowser,
-  NavigateWebBrowser;
 
-begin
-end.
+Exports
+  WebBrowserCreate,
+  WebBrowserDestroy,
+  WebBrowserShow,
+  WebBrowserNavigate,
+  WebBrowserGetOleObject;
+
+Begin
+
+End.

@@ -1,0 +1,11 @@
+*.ico
+*.dcu
+*.dproj
+*.local
+*.dsk
+*.identcache
+*.res
+*.skincfg
+__history
+*.~dsk
+*.stat

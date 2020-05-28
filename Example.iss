@@ -9,6 +9,8 @@ Source:"WebBrowser.dll"; Flags: dontcopy
 [Code]
 const
   EVENT_BEFORE_NAVIGATE = 1;
+  EVENT_FRAME_COMPLETE = 2;
+  EVENT_DOCUMENT_COMPLETE = 3;
 
 var
   CustomPage: TWizardPage;
@@ -16,40 +18,42 @@ var
 type
   TWebBrowserEventProc = procedure(EventCode: Integer; URL: WideString);
 
-procedure CreateWebBrowser(ParentWnd: HWND; Left, Top, Width, Height: Integer; 
+procedure WebBrowserCreate(ParentWnd: HWND; Left, Top, Width, Height: Integer; 
   CallbackProc: TWebBrowserEventProc);
-  external 'CreateWebBrowser@files:webbrowser.dll stdcall';
-procedure DestroyWebBrowser;
-  external 'DestroyWebBrowser@files:webbrowser.dll stdcall';
-procedure ShowWebBrowser(Visible: Boolean);
-  external 'ShowWebBrowser@files:webbrowser.dll stdcall';
-procedure NavigateWebBrowser(URL: WideString);
-  external 'NavigateWebBrowser@files:webbrowser.dll stdcall';
+  external 'WebBrowserCreate@files:webbrowser.dll stdcall';
+procedure WebBrowserDestroy;
+  external 'WebBrowserDestroy@files:webbrowser.dll stdcall';
+procedure WebBrowserShow(Visible: Boolean);
+  external 'WebBrowserShow@files:webbrowser.dll stdcall';
+procedure WebBrowserNavigate(URL: WideString);
+  external 'WebBrowserNavigate@files:webbrowser.dll stdcall';
+function WebBrowserGetOleObject: Variant;
+  external 'WebBrowserGetOleObject@files:webbrowser.dll stdcall';
 
 procedure OnWebBrowserEvent(EventCode: Integer; URL: WideString); 
 begin
-  if EventCode = EVENT_BEFORE_NAVIGATE then
-    MsgBox(URL, mbInformation, MB_OK);
+  if EventCode = EVENT_DOCUMENT_COMPLETE then
+    MsgBox('Navigation completed. ' + URL, mbInformation, MB_OK);
 end;
 
 procedure InitializeWizard;
 begin
   CustomPage := CreateCustomPage(wpWelcome, 'Web Browser Page', 
     'This page contains web browser');
-  CreateWebBrowser(WizardForm.InnerPage.Handle, 0, WizardForm.Bevel1.Top, 
+  WebBrowserCreate(WizardForm.InnerPage.Handle, 0, WizardForm.Bevel1.Top, 
     WizardForm.InnerPage.ClientWidth, WizardForm.InnerPage.ClientHeight - WizardForm.Bevel1.Top,
     @OnWebBrowserEvent);
-  NavigateWebBrowser('http://www.google.com');
+  WebBrowserNavigate('https://www.google.com');
 end;
 
 procedure DeinitializeSetup;
 begin
-  DestroyWebBrowser;
+  WebBrowserDestroy;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  ShowWebBrowser(CurPageID = CustomPage.ID);
+  WebBrowserShow(CurPageID = CustomPage.ID);
 end;
 
 

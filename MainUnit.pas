@@ -1,118 +1,146 @@
-unit MainUnit;
+Unit MainUnit;
 
-interface
+Interface
 
-uses
-  Classes, Windows, OleCtrls, SHDocVw;
+Uses
+  Classes, Windows, Variants, OleCtrls, SHDocVw;
 
-const
-  EVENT_BEFORE_NAVIGATE = 1;
+Const
+  EVENT_BEFORE_NAVIGATE   = 1;
+  EVENT_FRAME_COMPLETE    = 2;
+  EVENT_DOCUMENT_COMPLETE = 3;
 
-type
-  TWebBrowserEventProc = procedure(EventCode: Integer; URL: PWideChar) of object;
+Type
+  TWebBrowserEventProc = Procedure(EventCode: Integer; URL: PWideChar) Of Object;
 
-  TInnoWebBrowser = class
-  private
+  TInnoWebBrowser = Class
+  Private
     FWebBrowser: TWebBrowser;
     FEventCallback: TWebBrowserEventProc;
-    procedure OnBeforeNavigate2(ASender: TObject; const pDisp: IDispatch; var URL: OleVariant;
-      var Flags: OleVariant; var TargetFrameName: OleVariant; var PostData: OleVariant;
-      var Headers: OleVariant; var Cancel: WordBool);
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure InitWebBrowser(ParentWnd: HWND; Left, Top, Width,
-      Height: Integer; CallbackProc: TWebBrowserEventProc);
-    procedure ShowWebBrowser(Visible: Boolean);
-    procedure NavigateWebBrowser(URL: PWideChar);
-  end;
+    Procedure OnBeforeNavigate2(ASender: TObject; Const pDisp: IDispatch;
+      Const URL: OleVariant; Const Flags: OleVariant; Const TargetFrameName: OleVariant;
+      Const PostData: OleVariant; Const Headers: OleVariant; Var Cancel: WordBool);
+    Procedure OnDocumentComplete(ASender: TObject; Const pDisp: IDispatch; Const URL: OleVariant);
+  Public
+    Constructor Create(ParentWnd: HWND; Left, Top, Width, Height: Integer;
+      CallbackProc: TWebBrowserEventProc);
+    Destructor Destroy; Override;
+    Procedure Show(Visible: Boolean);
+    Procedure Navigate(URL: PWideChar);
+    Function GetOleObject: Variant;
+  End;
 
-procedure CreateWebBrowser(ParentWnd: HWND; Left, Top, Width,
-  Height: Integer; CallbackProc: TWebBrowserEventProc); stdcall;
-procedure DestroyWebBrowser; stdcall;
-procedure ShowWebBrowser(Visible: Boolean); stdcall;
-procedure NavigateWebBrowser(URL: PWideChar); stdcall;
+Procedure WebBrowserCreate(ParentWnd: HWND; Left, Top, Width, Height: Integer;
+  CallbackProc: TWebBrowserEventProc); Stdcall;
+Procedure WebBrowserDestroy; Stdcall;
+Procedure WebBrowserShow(Visible: Boolean); Stdcall;
+Procedure WebBrowserNavigate(URL: PWideChar); Stdcall;
+Function WebBrowserGetOleObject: Variant; Stdcall;
 
-implementation
+Implementation
 
-var
+Var
   InnoWebBrowser: TInnoWebBrowser;
 
-procedure CreateWebBrowser(ParentWnd: HWND; Left, Top, Width, Height: Integer;
+Procedure WebBrowserCreate(ParentWnd: HWND; Left, Top, Width, Height: Integer;
   CallbackProc: TWebBrowserEventProc);
-begin
-  DestroyWebBrowser;
-  InnoWebBrowser := TInnoWebBrowser.Create;
-  InnoWebBrowser.InitWebBrowser(ParentWnd, Left, Top, Width, Height, CallbackProc);
-end;
+Begin
+  WebBrowserDestroy;
+  InnoWebBrowser := TInnoWebBrowser.Create(ParentWnd, Left, Top, Width, Height, CallbackProc);
+End;
 
-procedure DestroyWebBrowser;
-begin
+Procedure WebBrowserDestroy;
+Begin
   InnoWebBrowser.Free;
-  InnoWebBrowser := nil;
-end;
+  InnoWebBrowser := Nil;
+End;
 
-procedure ShowWebBrowser(Visible: Boolean);
-begin
-  if Assigned(InnoWebBrowser) then
-    InnoWebBrowser.ShowWebBrowser(Visible);
-end;
+Procedure WebBrowserShow(Visible: Boolean);
+Begin
+  If Assigned(InnoWebBrowser) Then
+    InnoWebBrowser.Show(Visible);
+End;
 
-procedure NavigateWebBrowser(URL: PWideChar);
-begin
-  if Assigned(InnoWebBrowser) then
-    InnoWebBrowser.NavigateWebBrowser(URL);
-end;
+Procedure WebBrowserNavigate(URL: PWideChar);
+Begin
+  If Assigned(InnoWebBrowser) Then
+    InnoWebBrowser.Navigate(URL);
+End;
+
+Function WebBrowserGetOleObject: Variant;
+Begin
+  Result   := NULL;
+  If Assigned(InnoWebBrowser) Then
+    Result := InnoWebBrowser.GetOleObject;
+End;
 
 { TInnoWebBrowser }
 
-constructor TInnoWebBrowser.Create;
-begin
-  FWebBrowser := TWebBrowser.Create(nil);
-end;
-
-destructor TInnoWebBrowser.Destroy;
-begin
-  FWebBrowser.Free;
-  inherited;
-end;
-
-procedure TInnoWebBrowser.InitWebBrowser(ParentWnd: HWND; Left, Top, Width, Height: Integer;
+Constructor TInnoWebBrowser.Create(ParentWnd: HWND; Left, Top, Width, Height: Integer;
   CallbackProc: TWebBrowserEventProc);
-begin
-  FWebBrowser.ParentWindow := ParentWnd;
-  FWebBrowser.Left := Left;
-  FWebBrowser.Top := Top;
-  FWebBrowser.Width := Width;
-  FWebBrowser.Height := Height;
-  FWebBrowser.OnBeforeNavigate2 := OnBeforeNavigate2;
+Begin
+  FWebBrowser                    := TWebBrowser.Create(Nil);
+  FWebBrowser.ParentWindow       := ParentWnd;
+  FWebBrowser.Left               := Left;
+  FWebBrowser.Top                := Top;
+  FWebBrowser.Width              := Width;
+  FWebBrowser.Height             := Height;
+  FWebBrowser.OnBeforeNavigate2  := OnBeforeNavigate2;
+  FWebBrowser.OnDocumentComplete := OnDocumentComplete;
 
-  FEventCallback := CallbackProc;
-end;
+  FEventCallback                 := CallbackProc;
+End;
 
-procedure TInnoWebBrowser.NavigateWebBrowser(URL: PWideChar);
-begin
+Destructor TInnoWebBrowser.Destroy;
+Begin
+  FWebBrowser.Free;
+  Inherited;
+End;
+
+Procedure TInnoWebBrowser.Navigate(URL: PWideChar);
+Begin
   FWebBrowser.Navigate(URL);
-end;
+End;
 
-procedure TInnoWebBrowser.OnBeforeNavigate2(ASender: TObject; const pDisp: IDispatch; var URL,
-  Flags, TargetFrameName, PostData, Headers: OleVariant; var Cancel: WordBool);
-var
+Function TInnoWebBrowser.GetOleObject: Variant;
+Begin
+  Result := FWebBrowser.OleObject;
+End;
+
+Procedure TInnoWebBrowser.OnBeforeNavigate2(ASender: TObject; Const pDisp: IDispatch;
+  Const URL: OleVariant; Const Flags: OleVariant; Const TargetFrameName: OleVariant;
+  Const PostData: OleVariant; Const Headers: OleVariant; Var Cancel: WordBool);
+Var
   URLString: WideString;
-begin
-  if Assigned(FEventCallback) then
-  begin
+Begin
+  If Assigned(FEventCallback) Then
+  Begin
     URLString := URL;
     FEventCallback(EVENT_BEFORE_NAVIGATE, PWideChar(URLString));
-  end;
-end;
+  End;
+End;
 
-procedure TInnoWebBrowser.ShowWebBrowser(Visible: Boolean);
-begin
-  if Visible then
+Procedure TInnoWebBrowser.OnDocumentComplete(ASender: TObject; Const pDisp: IDispatch;
+  Const URL: OleVariant);
+Var
+  URLString: WideString;
+Begin
+  If Assigned(FEventCallback) Then
+  Begin
+    URLString := URL;
+    If pDisp <> TWebBrowser(ASender).ControlInterface Then
+      FEventCallback(EVENT_FRAME_COMPLETE, PWideChar(URLString))
+    Else
+      FEventCallback(EVENT_DOCUMENT_COMPLETE, PWideChar(URLString));
+  End;
+End;
+
+Procedure TInnoWebBrowser.Show(Visible: Boolean);
+Begin
+  If Visible Then
     FWebBrowser.Show
-  else
+  Else
     FWebBrowser.Hide;
-end;
+End;
 
-end.
+End.
